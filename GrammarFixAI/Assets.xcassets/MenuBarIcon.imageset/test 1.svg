@@ -1,0 +1,8 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded speech bubble (no tail), shifted down -->
+  <rect x="2" y="2" width="16" height="16" rx="3" stroke="white" stroke-width="2" fill="none"/>
+  <!-- "G" centered inside bubble, shifted down -->
+  <text x="5" y="11" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="bold" fill="white">G</text>
+  <!-- Checkmark on right side, shifted down -->
+  <polyline points="10,12 12,14 15,10" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
