@@ -62,4 +62,4 @@ Please note, however, this is **not** intended for rebranding or redistribution 
 
 ## 📜 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under a custom BSD-style license. See the [LICENSE](LICENSE) file for details.
