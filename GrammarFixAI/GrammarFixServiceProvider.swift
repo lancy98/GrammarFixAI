@@ -19,22 +19,15 @@ final class GrammarFixServiceProvider: NSObject {
                return
            }
            
-           guard let apiKeyData = KeychainHelper.shared.read(
-            service: Constants.Service,
-            account: Constants.Account
-           ), let apiKey = String(data: apiKeyData, encoding: .utf8) else {
-               error.pointee = "no api key available" as NSString
-               return
-           }
-           
            let semaphore = DispatchSemaphore(value: 0)
 
            Task {
                do {
-                   let api = GrammarCorrector(apiKey: apiKey)
-                   let selectedMode = SelectedModePreference.value
-                   let fullPrompt = "\(selectedMode.prompt)\n\nText: \(input)"
-                   let output = try await api.correctGrammar(of: fullPrompt)
+                   let fullPrompt = "\(Preferences.selectedMode.prompt)\n\nText: \(input)"
+                   
+                   let corrector = GrammarCorrector()
+                   let output = try await corrector.correct(textInput: fullPrompt)
+                   
                    pasteboard.clearContents()
                    pasteboard.setString(output, forType: .string)
                } catch {
