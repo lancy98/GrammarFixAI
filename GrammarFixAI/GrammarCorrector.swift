@@ -65,19 +65,10 @@ final class GrammarCorrector {
         let messages = [
             ChatMessage(
                 role: "system",
-                content: """
-                    You are a professional writing assistant.  
-                    Your task is to improve user-provided text by:  
-                    - Correcting grammar, spelling, punctuation, and capitalization  
-                    - Enhancing clarity, conciseness, and readability  
-                    - Adjusting tone and style to fit the context appropriately  
-                    - Improving flow and vocabulary where beneficial  
-
-                    Preserve the original meaning.  
-                    Return only the improved version of the text, without explanations or commentary.
-            """),
+                content: " You are a grammar correction assistant. Follow the user's instruction exactly and return only the corrected text — no preamble, no explanation."),
             ChatMessage(role: "user", content: text)
         ]
+        
         
         let body = ChatRequest(model: model, messages: messages, temperature: 0.0)
         var request = URLRequest(url: url)

@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		BF6E15662E50995C007D606F /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = BF6E15652E50995C007D606F /* FirebaseAnalytics */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		BF6E154D2E4F568B007D606F /* GrammarFixAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GrammarFixAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -40,7 +36,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BF6E15662E50995C007D606F /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,7 +78,6 @@
 			);
 			name = GrammarFixAI;
 			packageProductDependencies = (
-				BF6E15652E50995C007D606F /* FirebaseAnalytics */,
 			);
 			productName = GrammarFix;
 			productReference = BF6E154D2E4F568B007D606F /* GrammarFixAI.app */;
@@ -114,7 +108,6 @@
 			mainGroup = BF6E15442E4F568B007D606F;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				BF6E15642E50995C007D606F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BF6E154E2E4F568B007D606F /* Products */;
@@ -350,25 +343,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		BF6E15642E50995C007D606F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 12.1.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		BF6E15652E50995C007D606F /* FirebaseAnalytics */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BF6E15642E50995C007D606F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalytics;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BF6E15452E4F568B007D606F /* Project object */;
 }

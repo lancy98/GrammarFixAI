@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import Firebase
 
 final class GrammarFixServiceProvider: NSObject {
     
@@ -28,13 +27,14 @@ final class GrammarFixServiceProvider: NSObject {
                return
            }
            
-           Analytics.logEvent("Fix Grammar Service", parameters: nil)
            let semaphore = DispatchSemaphore(value: 0)
 
            Task {
                do {
                    let api = GrammarCorrector(apiKey: apiKey)
-                   let output = try await api.correctGrammar(of: input)
+                   let selectedMode = SelectedModePreference.value
+                   let fullPrompt = "\(selectedMode.prompt)\n\nText: \(input)"
+                   let output = try await api.correctGrammar(of: fullPrompt)
                    pasteboard.clearContents()
                    pasteboard.setString(output, forType: .string)
                } catch {

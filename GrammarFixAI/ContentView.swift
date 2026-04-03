@@ -7,17 +7,20 @@
 
 import SwiftUI
 import ServiceManagement
-import Firebase
 
 struct ContentView: View {
+    @Environment(\.colorScheme) var colorScheme
     @State private var openAPIKey = ""
     @State private var textInput = ""
     @State private var textOutput = ""
     @State private var isLoadingResult = false
     @State private var launchAtLogin = false
+    @State private var selectedMode: GrammarMode = SelectedModePreference.value
 
     var body: some View {
         VStack(alignment: .leading) {
+            modePicker
+
             TextField(
                 "Open AI API Key",
                 text: $openAPIKey
@@ -35,15 +38,37 @@ struct ContentView: View {
                 isLoadingResult = true
                 Task {
                     let api = GrammarCorrector(apiKey: openAPIKey)
-                    textOutput = try await api.correctGrammar(of: textInput)
+                    let fullPrompt = "\(selectedMode.prompt)\n\nText: \(textInput)"
+                    textOutput = try await api.correctGrammar(of: fullPrompt)
                     isLoadingResult = false
                 }
             } label: {
-                Text("Fix")
-                    .bold()
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 4)
+                HStack(spacing: 7) {
+                    if isLoadingResult {
+                        ProgressView().progressViewStyle(.circular).scaleEffect(0.65).tint(.white)
+                    } else {
+                        Image(systemName: "wand.and.stars").font(.system(size: 12, weight: .semibold))
+                    }
+                    Text(isLoadingResult ? "Fixing…" : "\(selectedMode.rawValue) with OpenAI")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    Group {
+                        if isLoadingResult || textInput.isEmpty {
+                            LinearGradient(colors: [Color.white.opacity(0.07), Color.white.opacity(0.07)],
+                                           startPoint: .leading, endPoint: .trailing)
+                        } else {
+                            LinearGradient(colors: [Color(hex: "#5B8DEF"), Color(hex: "#7C3AED")],
+                                           startPoint: .leading, endPoint: .trailing)
+                        }
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
+            .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
             .disabled(isLoadingResult || textInput.isEmpty)
             
@@ -105,11 +130,47 @@ struct ContentView: View {
         .onChange(of: openAPIKey) { _, newValue in
             saveAPIKey(newValue: newValue)
         }
+        .onChange(of: selectedMode) { _, newValue in
+            SelectedModePreference.value = newValue
+        }
         .onAppear {
             loadAPIKey()
-            Analytics.logEvent("Content View Appear", parameters: nil)
         }
     }
+    
+    private var modePicker: some View {
+        HStack(spacing: 6) {
+            ForEach(GrammarMode.allCases, id: \.self) { mode in
+                Button {
+                    withAnimation(.spring(response: 0.25)) { selectedMode = mode }
+                } label: {
+                    Label(mode.rawValue, systemImage: mode.icon)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(
+                            selectedMode == mode ? .white : Color.primary.opacity(0.4)
+                        )
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Group {
+                                if selectedMode == mode {
+                                    LinearGradient(
+                                        colors: [Color(hex: "#5B8DEF"), Color(hex: "#7C3AED")],
+                                        startPoint: .leading, endPoint: .trailing
+                                    )
+                                } else {
+                                    Color.primary.opacity(0.06)
+                                }
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     
     private func updateLaunchAtLogin(newValue: Bool) {
         if newValue == true {
