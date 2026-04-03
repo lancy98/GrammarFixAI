@@ -26,13 +26,10 @@ Please note, however, this is **not** intended for rebranding or redistribution 
  
 | | |
 |---|---|
-| ![Fix with Apple Intelligence](screenshots/screenshot_1.png) | ![Fix with OpenAI](screenshots/screenshot_2.png) |
+| ![Fix with Apple Intelligence](assets/screenshot_1.png) | ![Fix with OpenAI](assets/screenshot_2.png) |
 | Fix with Apple Intelligence | Fix with OpenAI |
-| ![Dark mode](screenshots/screenshot_3.png) | ![Provider switching](screenshots/screenshot_4.png) |
-| Dark mode support | Switch AI providers |
- 
-![Right-click integration](screenshots/screenshot_5.png)
-*Fix Grammar from the Services menu in any app*
+| ![Dark mode](assets/screenshot_3.png) | ![Right-click integration](assets/screenshot_4.png) |
+| Dark mode support | Fix Grammar from the Services menu in any app |
  
 ---
 
