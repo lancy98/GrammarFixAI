@@ -21,15 +21,19 @@ I’m sharing this source so others can **explore, learn from it, and hopefully 
 Please note, however, this is **not** intended for rebranding or redistribution under a different name with minimal changes.
 
 ---
-
-## 🖼 Screenshots
-
-<p align="center">
-  <img src="assets/Screenshot1.png" alt="Screenshot 1" width="300"/>
-  <img src="assets/Screenshot2.png" alt="Screenshot 2" width="300"/>
-  <img src="assets/Screenshot3.png" alt="Screenshot 3" width="300"/>
-</p>
-
+ 
+## Screenshots
+ 
+| | |
+|---|---|
+| ![Fix with Apple Intelligence](screenshots/screenshot_1.png) | ![Fix with OpenAI](screenshots/screenshot_2.png) |
+| Fix with Apple Intelligence | Fix with OpenAI |
+| ![Dark mode](screenshots/screenshot_3.png) | ![Provider switching](screenshots/screenshot_4.png) |
+| Dark mode support | Switch AI providers |
+ 
+![Right-click integration](screenshots/screenshot_5.png)
+*Fix Grammar from the Services menu in any app*
+ 
 ---
 
 ### 🔧 Configuration Steps
