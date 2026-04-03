@@ -35,8 +35,7 @@ Please note, however, this is **not** intended for rebranding or redistribution 
 
 ### 🔧 Configuration Steps
 
-1. Create a `GoogleService-Info.plist` file using the steps in the link [Firebase iOS Setup Guide](https://firebase.google.com/docs/ios/setup)
-2. Place it inside the `GrammarFixAI` folder
+1. Download the project
 3. Update the app identifier for the project
 4. Also update the `keychain-access-groups` in the `GrammarFixAI.entitlements`
 5. Now run the project
@@ -54,7 +53,7 @@ Please note, however, this is **not** intended for rebranding or redistribution 
 
 ## 🖥 Requirements
 
-- macOS **15.5 or later**
+- macOS **26.0 or later**
 - App size: ~2 MB
 - Language support: English
 - Price: Free
