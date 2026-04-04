@@ -2,20 +2,24 @@ import Foundation
 
 enum Preferences {
     
-    private static var selectedModeStorage = SharedPreference<GrammarMode>(
-        key: "selectedMode",
-        defaultValue: .fix
-    )
+    private static var selectedModeStorage: SharedPreference<GrammarMode> {
+        SharedPreference<GrammarMode>(
+            key: "selectedMode",
+            defaultValue: .fix
+        )
+    }
     
     static var selectedMode: GrammarMode {
         get { selectedModeStorage.value }
         set { selectedModeStorage.value = newValue }
     }
     
-    private static var selectedProviderStorage = SharedPreference<AIProvider>(
-        key: "selectedProvider",
-        defaultValue: .apple
-    )
+    private static var selectedProviderStorage: SharedPreference<AIProvider> {
+        SharedPreference<AIProvider>(
+           key: "selectedProvider",
+           defaultValue: .apple
+       )
+    }
     
     static var selectedProvider: AIProvider {
         get { selectedProviderStorage.value }
@@ -23,7 +27,7 @@ enum Preferences {
     }
 }
 
-struct SharedPreference<Value: RawRepresentable> where Value.RawValue == String {
+final class SharedPreference<Value: RawRepresentable> where Value.RawValue == String {
     private let suiteName: String = "group.com.lancy.grammarfixai.shared"
     private let key: String
     private let defaultValue: Value

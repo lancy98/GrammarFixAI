@@ -6,6 +6,6 @@
 //
 
 enum Constants {
-    static var Service = "com.lancy.openai"
-    static var Account = "apiKey"
+    static var Service: String { "com.lancy.openai" }
+    static var Account: String { "apiKey" }
 }

@@ -7,7 +7,7 @@ struct GrammarCorrector {
     }
         
     private var openAPIKey: String? {
-        guard let data = KeychainHelper.shared.read(
+        guard let data = KeychainHelper().read(
             service: Constants.Service,
             account: Constants.Account
         ), let key = String(data: data, encoding: .utf8) else {

@@ -10,8 +10,6 @@ import Security
 
 final class KeychainHelper {
     private let group = "com.lancy.grammarfixai"
-    static let shared = KeychainHelper()
-    private init() {}
     
     // Save to Keychain
     func save(service: String, account: String, data: Data) {

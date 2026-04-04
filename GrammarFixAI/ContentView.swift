@@ -4,26 +4,14 @@
 //
 //  Created by Lancy Norbert Fernandes on 15/08/25.
 //
-
 import SwiftUI
 import ServiceManagement
 import FoundationModels
 
 struct ContentView: View {
     @Environment(\.colorScheme) var colorScheme
-    @State private var openAPIKey = ""
-    @State private var textInput = ""
-    @State private var textOutput = ""
-    @State private var isLoadingResult = false
-    @State private var launchAtLogin = false
-    @State private var selectedMode: GrammarMode = Preferences.selectedMode
-    @State private var selectedProvider: AIProvider = Preferences.selectedProvider
-    @State private var errorMessage: String? = nil
-    @State private var appleAvailability: SystemLanguageModel.Availability = .available
-    @State private var apiKeyMasked: Bool   = true
-    @State private var apiKeySaved: Bool    = false
-    @State private var copiedToClipboard: Bool = false
-
+    @State private var vm = ContentViewModel()
+    
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
@@ -31,37 +19,24 @@ struct ContentView: View {
                 providerBadge
             }
             modePicker
-
-            if selectedProvider == .openAI {
+            
+            if vm.selectedProvider == .openAI {
                 apiKeyRow
             }
             
             Text("Add your text below:")
                 .foregroundStyle(.secondary)
-            TextEditor(text: $textInput)
+            TextEditor(text: $vm.textInput)
                 .padding(.vertical, 4)
                 .scrollContentBackground(.hidden)
                 .background(.quaternary)
                 .frame(minHeight: 100)
             
             Button {
-                errorMessage = nil
-                isLoadingResult = true
-                Task {
-                    let fullPrompt = "\(selectedMode.prompt)\n\nText: \(textInput)"
-                    let corrector = GrammarCorrector()
-                    do {
-                        textOutput = try await corrector.correct(textInput: fullPrompt)
-                    } catch GrammarCorrector.CorrectorError.error(let error) {
-                        errorMessage = error
-                    } catch {
-                        errorMessage = error.localizedDescription
-                    }
-                    isLoadingResult = false
-                }
+                Task { await vm.correct() }
             } label: {
                 HStack(spacing: 7) {
-                    if isLoadingResult {
+                    if vm.isLoadingResult {
                         ProgressView()
                             .progressViewStyle(.circular)
                             .controlSize(.small)
@@ -70,41 +45,33 @@ struct ContentView: View {
                         Image(systemName: "wand.and.stars")
                             .imageScale(.small)
                     }
-                    Text(isLoadingResult ? "Fixing…" : "\(selectedMode.rawValue) with \(selectedProvider.rawValue)")
-                        .font(.subheadline.weight(.semibold))
+                    Text(vm.isLoadingResult
+                         ? "Fixing…"
+                         : "\(vm.selectedMode.rawValue) with \(vm.selectedProvider.rawValue)")
+                    .font(.subheadline.weight(.semibold))
                 }
                 .foregroundColor(actionButtonForeground)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(
-                    Group {
-                        if isLoadingResult || textInput.isEmpty {
-                            LinearGradient(colors: [disabledActionButtonBackground, disabledActionButtonBackground],
-                                           startPoint: .leading, endPoint: .trailing)
-                        } else {
-                            LinearGradient(colors: [Color(hex: "#5B8DEF"), Color(hex: "#7C3AED")],
-                                           startPoint: .leading, endPoint: .trailing)
-                        }
-                    }
-                )
+                .background(actionButtonBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
-            .disabled(isLoadingResult || textInput.isEmpty)
+            .disabled(vm.isCorrectionButtonDisabled)
             
             Text("Result below:")
                 .foregroundStyle(.secondary)
-
-            TextEditor(text: textOutput.isEmpty ? .constant("Corrected text will appear here…") : $textOutput)
+            
+            TextEditor(text: vm.textOutput.isEmpty ? .constant("Corrected text will appear here…") : $vm.textOutput)
                 .disabled(true)
                 .padding(.vertical, 4)
                 .foregroundColor(outputTextColor)
                 .scrollContentBackground(.hidden)
                 .background(outputBG)
                 .frame(minHeight: 100)
-
-            if let error = errorMessage {
+            
+            if let error = vm.errorMessage {
                 errorBanner(error)
             }
             
@@ -112,18 +79,16 @@ struct ContentView: View {
             
             HStack {
                 Button {
-                    copyToClipboard()
+                    vm.copyToClipboard()
                 } label: {
-                    Label(copiedToClipboard ? "Copied!" : "Copy Result",
-                          systemImage: copiedToClipboard ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(copiedToClipboard ? Color(hex: "#34D399") : Color(hex: "#5B8DEF"))
+                    Label(vm.copiedToClipboard ? "Copied!" : "Copy Result",
+                          systemImage: vm.copiedToClipboard ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(vm.copiedToClipboard ? Color(hex: "#34D399") : Color(hex: "#5B8DEF"))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.blue)
-                .bold()
-                .disabled(isLoadingResult || textInput.isEmpty)
-
+                .disabled(vm.isLoadingResult || vm.textOutput.isEmpty)
+                
                 Spacer()
                 
                 Button {
@@ -140,7 +105,7 @@ struct ContentView: View {
             Divider()
             
             VStack(alignment: .leading, spacing: 8) {
-                Toggle("Launch at login", isOn: $launchAtLogin)
+                Toggle("Launch at login", isOn: $vm.launchAtLogin)
                 Text("""
                 Add GrammarFix app to the menu bar automatically \
                 when you log in on your Mac.
@@ -150,84 +115,72 @@ struct ContentView: View {
             }
         }
         .padding()
-        .onChange(of: launchAtLogin) { _, newValue in
-            updateLaunchAtLogin(newValue: newValue)
-        }
-        .onChange(of: selectedMode) { _, newValue in
-            Preferences.selectedMode = newValue
-        }
-        .onChange(of: selectedProvider) { _, newValue in
-            Preferences.selectedProvider = newValue
+        .onChange(of: vm.launchAtLogin) { _, newValue in
+            vm.updateLaunchAtLogin(newValue)
         }
         .onAppear {
-            appleAvailability = SystemLanguageModel.default.availability
-            loadAPIKey()
+            vm.onAppear()
         }
     }
+    
+    // MARK: - Subviews
     
     private var apiKeyRow: some View {
         HStack(spacing: 8) {
             Image(systemName: "key.horizontal")
                 .font(.system(size: 11))
                 .foregroundColor(apiKeyIconColor)
-
+            
             Group {
-                if apiKeyMasked && !openAPIKey.isEmpty {
-                    Text(String(repeating: "•", count: min(openAPIKey.count, 30)))
+                if vm.apiKeyMasked && !vm.openAPIKey.isEmpty {
+                    Text(String(repeating: "•", count: min(vm.openAPIKey.count, 30)))
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(apiKeyMaskedColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .lineLimit(1)
                 } else {
-                    TextField("Paste your OpenAI API key…", text: $openAPIKey)
+                    TextField("Paste your OpenAI API key…", text: $vm.openAPIKey)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(apiKeyTextColor)
                         .textFieldStyle(.plain)
-                        .onSubmit { saveAPIKey() }
+                        .onSubmit { vm.saveAPIKey() }
                 }
             }
-
-            // Show / hide
+            
             Button {
-                apiKeyMasked.toggle()
+                vm.toggleAPIKeyVisibility()
             } label: {
-                Image(systemName: apiKeyMasked ? "eye" : "eye.slash")
+                Image(systemName: vm.apiKeyMasked ? "eye" : "eye.slash")
                     .font(.system(size: 11))
                     .foregroundColor(apiKeyIconColor)
             }
             .buttonStyle(.plain)
-
-            // Save
-            Button { saveAPIKey() } label: {
-                Text(apiKeySaved ? "Saved ✓" : "Save")
+            
+            Button { vm.saveAPIKey() } label: {
+                Text(vm.apiKeySaved ? "Saved ✓" : "Save")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(apiKeySaved ? Color(hex: "#34D399") : Color(hex: "#60A5FA"))
+                    .foregroundColor(vm.apiKeySaved ? Color(hex: "#34D399") : Color(hex: "#60A5FA"))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(
-                        (apiKeySaved ? Color(hex: "#34D399") : Color(hex: "#60A5FA")).opacity(0.12)
+                        (vm.apiKeySaved ? Color(hex: "#34D399") : Color(hex: "#60A5FA")).opacity(0.12)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 5))
             }
             .buttonStyle(.plain)
-            .disabled(openAPIKey.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(vm.openAPIKey.trimmingCharacters(in: .whitespaces).isEmpty)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(apiKeyBackgroundColor)
     }
-
     
     private var outputBG: some View {
         RoundedRectangle(cornerRadius: 10)
-            .fill(textOutput.isEmpty
-                  ? outputBackgroundEmpty
-                  : outputBackgroundFilled)
+            .fill(vm.textOutput.isEmpty ? outputBackgroundEmpty : outputBackgroundFilled)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(textOutput.isEmpty
-                            ? outputBorderEmpty
-                            : outputBorderFilled,
+                    .stroke(vm.textOutput.isEmpty ? outputBorderEmpty : outputBorderFilled,
                             lineWidth: 0.5)
             )
     }
@@ -246,43 +199,20 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
-    @MainActor
-    private func runWithApple(prompt: String) async -> String {
-        do {
-            var outputText = ""
-            let session = LanguageModelSession()
-            let stream  = session.streamResponse(to: prompt)
-            for try await snapshot in stream {
-                outputText = snapshot.content
-            }
-            return outputText
-        } catch LanguageModelSession.GenerationError.guardrailViolation {
-            errorMessage = "Content flagged by on-device guardrails."
-        } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
-            print("Text too long. Please shorten your input")
-            errorMessage = "Text too long. Please shorten your input."
-        } catch {
-            errorMessage = "Apple model error: \(error.localizedDescription)"
-        }
-        return ""
-    }
-    
     private var modePicker: some View {
         HStack(spacing: 6) {
             ForEach(GrammarMode.allCases, id: \.self) { mode in
                 Button {
-                    withAnimation(.spring(response: 0.25)) { selectedMode = mode }
+                    withAnimation(.spring(response: 0.25)) { vm.selectedMode = mode }
                 } label: {
                     Label(mode.rawValue, systemImage: mode.icon)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(
-                            selectedMode == mode ? .white : Color.primary.opacity(0.4)
-                        )
+                        .foregroundColor(vm.selectedMode == mode ? .white : Color.primary.opacity(0.4))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(
                             Group {
-                                if selectedMode == mode {
+                                if vm.selectedMode == mode {
                                     LinearGradient(
                                         colors: [Color(hex: "#5B8DEF"), Color(hex: "#7C3AED")],
                                         startPoint: .leading, endPoint: .trailing
@@ -299,14 +229,12 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
+    
     private var providerToggle: some View {
         HStack(spacing: 0) {
             ForEach(AIProvider.allCases, id: \.self) { provider in
                 Button {
-                    withAnimation(.spring(response: 0.25)) {
-                        selectedProvider = provider
-                    }
+                    withAnimation(.spring(response: 0.25)) { vm.selectedProvider = provider }
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: provider.icon)
@@ -314,12 +242,12 @@ struct ContentView: View {
                         Text(provider.rawValue)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundColor(selectedProvider == provider ? .white : providerToggleInactiveText)
+                    .foregroundColor(vm.selectedProvider == provider ? .white : providerToggleInactiveText)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
                     .background(
                         Group {
-                            if selectedProvider == provider {
+                            if vm.selectedProvider == provider {
                                 LinearGradient(
                                     colors: [Color(hex: "#5B8DEF"), Color(hex: "#7C3AED")],
                                     startPoint: .leading, endPoint: .trailing
@@ -339,85 +267,15 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 9))
         .overlay(RoundedRectangle(cornerRadius: 9).stroke(providerToggleBorder, lineWidth: 0.5))
     }
-
-    private var isDark: Bool {
-        colorScheme == .dark
-    }
-
-    private var actionButtonForeground: Color {
-        if isLoadingResult || textInput.isEmpty {
-            return isDark ? Color.white.opacity(0.6) : Color.primary.opacity(0.6)
-        }
-        return .white
-    }
-
-    private var disabledActionButtonBackground: Color {
-        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.08)
-    }
-
-    private var outputTextColor: Color {
-        if textOutput.isEmpty {
-            return .secondary
-        }
-        return isDark ? Color(hex: "#A7F3D0") : Color(hex: "#065F46")
-    }
-
-    private var outputBackgroundEmpty: Color {
-        isDark ? Color.white.opacity(0.03) : Color.black.opacity(0.04)
-    }
-
-    private var outputBackgroundFilled: Color {
-        isDark ? Color(hex: "#064E3B").opacity(0.28) : Color(hex: "#A7F3D0").opacity(0.22)
-    }
-
-    private var outputBorderEmpty: Color {
-        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.08)
-    }
-
-    private var outputBorderFilled: Color {
-        isDark ? Color(hex: "#34D399").opacity(0.22) : Color(hex: "#059669").opacity(0.35)
-    }
-
-    private var apiKeyIconColor: Color {
-        isDark ? Color.white.opacity(0.35) : Color.black.opacity(0.35)
-    }
-
-    private var apiKeyMaskedColor: Color {
-        isDark ? Color.white.opacity(0.5) : Color.black.opacity(0.5)
-    }
-
-    private var apiKeyTextColor: Color {
-        isDark ? .white : .primary
-    }
-
-    private var apiKeyBackgroundColor: Color {
-        isDark ? Color.white.opacity(0.025) : Color.black.opacity(0.04)
-    }
-
-    private var providerToggleBackground: Color {
-        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.06)
-    }
-
-    private var providerToggleBorder: Color {
-        isDark ? Color.white.opacity(0.1) : Color.black.opacity(0.12)
-    }
-
-    private var providerToggleInactiveText: Color {
-        isDark ? Color.white.opacity(0.4) : Color.primary.opacity(0.6)
-    }
     
     @ViewBuilder
     private var providerBadge: some View {
-        let isReady: Bool = {
-            switch selectedProvider {
-            case .apple:  return appleAvailability == .available
-            case .openAI: return !openAPIKey.trimmingCharacters(in: .whitespaces).isEmpty
-            }
-        }()
-        let color = isReady ? Color(hex: selectedProvider.badgeColor) : Color(hex: "#F87171")
-        let label = isReady ? selectedProvider.badgeLabel : "Not Set"
-        let icon  = isReady ? selectedProvider.badgeIcon  : "exclamationmark.triangle"
-
+        let color = vm.isProviderReady
+        ? Color(hex: vm.selectedProvider.badgeColor)
+        : Color(hex: "#F87171")
+        let label = vm.isProviderReady ? vm.selectedProvider.badgeLabel : "Not Set"
+        let icon  = vm.isProviderReady ? vm.selectedProvider.badgeIcon  : "exclamationmark.triangle"
+        
         Label(label, systemImage: icon)
             .font(.system(size: 9, weight: .medium))
             .foregroundColor(color)
@@ -427,62 +285,80 @@ struct ContentView: View {
             .clipShape(Capsule())
     }
     
-    private func updateLaunchAtLogin(newValue: Bool) {
-        if newValue == true {
-            try? SMAppService.mainApp.register()
-        } else {
-            try? SMAppService.mainApp.unregister()
+    // MARK: - Theming
+    
+    private var isDark: Bool { colorScheme == .dark }
+    
+    private var actionButtonForeground: Color {
+        vm.isCorrectionButtonDisabled
+        ? (isDark ? Color.white.opacity(0.6) : Color.primary.opacity(0.6))
+        : .white
+    }
+    
+    private var actionButtonBackground: some View {
+        Group {
+            if vm.isCorrectionButtonDisabled {
+                LinearGradient(colors: [disabledActionButtonBackground, disabledActionButtonBackground],
+                               startPoint: .leading, endPoint: .trailing)
+            } else {
+                LinearGradient(colors: [Color(hex: "#5B8DEF"), Color(hex: "#7C3AED")],
+                               startPoint: .leading, endPoint: .trailing)
+            }
         }
     }
     
-    private func loadAPIKey() {
-        guard let data = KeychainHelper.shared.read(
-            service: Constants.Service,
-            account: Constants.Account
-        ), let key = String(data: data, encoding: .utf8) else {
-            return
-        }
-        openAPIKey = key
+    private var disabledActionButtonBackground: Color {
+        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.08)
     }
     
-    private func saveAPIKey(newValue: String) {
-        if newValue.isEmpty {
-            KeychainHelper.shared.delete(service: Constants.Service, account: Constants.Account)
-            return
-        }
-
-        guard let data = newValue.data(using: .utf8) else {
-            openAPIKey = ""
-            return
-        }
-
-        if let existingData = KeychainHelper.shared.read(service: Constants.Service, account: Constants.Account),
-           let existingKey = String(data: existingData, encoding: .utf8),
-           existingKey == newValue {
-            return
-        }
-
-        KeychainHelper.shared.save(service: Constants.Service, account: Constants.Account, data: data)
+    private var outputTextColor: Color {
+        vm.isTextOutputEmpty
+        ? .secondary
+        : (isDark ? Color(hex: "#A7F3D0") : Color(hex: "#065F46"))
     }
     
-    private func saveAPIKey() {
-        saveAPIKey(newValue: openAPIKey)
-        apiKeyMasked = true
-        apiKeySaved  = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { apiKeySaved = false }
+    private var outputBackgroundEmpty: Color {
+        isDark ? Color.white.opacity(0.03) : Color.black.opacity(0.04)
     }
     
-    private func copyToClipboard() {
-        guard !textOutput.isEmpty else { return }
-        
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(textOutput, forType: .string)
-
-        withAnimation { copiedToClipboard = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation { copiedToClipboard = false }
-        }
+    private var outputBackgroundFilled: Color {
+        isDark ? Color(hex: "#064E3B").opacity(0.28) : Color(hex: "#A7F3D0").opacity(0.22)
+    }
+    
+    private var outputBorderEmpty: Color {
+        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.08)
+    }
+    
+    private var outputBorderFilled: Color {
+        isDark ? Color(hex: "#34D399").opacity(0.22) : Color(hex: "#059669").opacity(0.35)
+    }
+    
+    private var apiKeyIconColor: Color {
+        isDark ? Color.white.opacity(0.35) : Color.black.opacity(0.35)
+    }
+    
+    private var apiKeyMaskedColor: Color {
+        isDark ? Color.white.opacity(0.5) : Color.black.opacity(0.5)
+    }
+    
+    private var apiKeyTextColor: Color {
+        isDark ? .white : .primary
+    }
+    
+    private var apiKeyBackgroundColor: Color {
+        isDark ? Color.white.opacity(0.025) : Color.black.opacity(0.04)
+    }
+    
+    private var providerToggleBackground: Color {
+        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.06)
+    }
+    
+    private var providerToggleBorder: Color {
+        isDark ? Color.white.opacity(0.1) : Color.black.opacity(0.12)
+    }
+    
+    private var providerToggleInactiveText: Color {
+        isDark ? Color.white.opacity(0.4) : Color.primary.opacity(0.6)
     }
 }
 
