@@ -21,21 +21,29 @@ I’m sharing this source so others can **explore, learn from it, and hopefully 
 Please note, however, this is **not** intended for rebranding or redistribution under a different name with minimal changes.
 
 ---
- 
+
 ## Screenshots
- 
-| | |
-|---|---|
-| ![Fix with Apple Intelligence](assets/screenshot_1.png) | ![Fix with OpenAI](assets/screenshot_2.png) |
-| Fix with Apple Intelligence | Fix with OpenAI |
-| ![Dark mode](assets/screenshot_3.png) | ![Right-click integration](assets/screenshot_4.png) |
-| Dark mode support | Fix Grammar from the Services menu in any app |
- 
+
+|                                                         |                                                     |
+| ------------------------------------------------------- | --------------------------------------------------- |
+| ![Fix with Apple Intelligence](assets/screenshot_1.png) | ![Fix with OpenAI](assets/screenshot_2.png)         |
+| Fix with Apple Intelligence                             | Fix with OpenAI                                     |
+| ![Dark mode](assets/screenshot_3.png)                   | ![Right-click integration](assets/screenshot_4.png) |
+| Dark mode support                                       | Fix Grammar from the Services menu in any app       |
+
 ---
 
 ### 🔧 Configuration Steps
 
-1. Download the project
+1. Clone the repository
+    ```bash
+    git clone https://github.com/lancy98/GrammarFixAI.git
+    cd GrammarFixAI
+    ```
+2. Open the project in Xcode
+   ```bash
+   open GrammarFixAI.xcodeproj
+   ```
 3. Update the app identifier for the project
 4. Also update the `keychain-access-groups` in the `GrammarFixAI.entitlements`
 5. Now run the project
@@ -62,4 +70,4 @@ Please note, however, this is **not** intended for rebranding or redistribution 
 
 ## 📜 License
 
-This project is licensed under a custom BSD-style license. See the [LICENSE](LICENSE) file for details.
+This project is licensed under a custom BSD-style license. See the [LICENSE](LICENSE.md) file for details.

@@ -1,8 +1,8 @@
 GrammarFixAI
 
-Version 1.0, August 18th, 2025
+Version 2.0, April 4th, 2026
 
-Copyright (C) 2025 Lancy
+Copyright (C) 2026 Lancy
 
 Redistribution in binary form is not permitted without specific prior written permission from the copyright holders.
 
